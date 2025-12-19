@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Private Miguel</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont;
+  background:#000;
+  color:#fff;
+}
+
+/* LOGIN */
+#login{
+  position:fixed;inset:0;background:#000;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  z-index:999;
+}
+.dots{display:flex;gap:12px;margin:20px}
+.dot{width:14px;height:14px;border-radius:50%;border:1px solid #444}
+.dot.filled{background:#fff}
+.keypad{display:grid;grid-template-columns:repeat(3,80px);gap:15px}
+.keypad button{
+  width:80px;height:80px;border-radius:50%;
+  background:#111;color:#fff;font-size:22px;border:1px solid #222
+}
+
+/* HEADER */
+header{
+  display:flex;justify-content:space-between;
+  padding:15px;border-bottom:1px solid #111;font-size:20px
+}
+.menu-btn{cursor:pointer}
+
+/* MENU */
+.menu{
+  position:fixed;top:0;right:0;width:260px;height:100%;
+  background:#000;border-left:1px solid #111;
+  padding:20px;transform:translateX(100%);
+  transition:.3s;z-index:10
+}
+.menu.open{transform:none}
+.menu button{
+  width:100%;background:none;color:#0a84ff;
+  text-align:left;font-size:18px;margin-bottom:12px
+}
+
+/* CARDS */
+.card{
+  margin:15px;padding:20px;
+  border-radius:18px;border:1px solid #111;
+  animation:fade .3s
+}
+.hidden{display:none}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1}}
+
+/* INPUTS */
+input,textarea,button{
+  width:100%;padding:12px;margin-top:8px;
+  border-radius:12px;background:#111;color:#fff;border:1px solid #222
+}
+button{background:#0a84ff;border:none}
+
+/* GALERIA */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-top:15px;
+}
+.photo{
+  aspect-ratio:1/1;
+  overflow:hidden;
+  border-radius:12px;
+  position:relative;
+}
+.photo img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  cursor:pointer;
+}
+.delete{
+  position:absolute;
+  bottom:6px;
+  right:6px;
+  background:#ff3b30;
+  border:none;
+  border-radius:50%;
+  width:28px;
+  height:28px;
+  color:#fff;
+}
+
+/* MODAL */
+#modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.95);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+#modal img{
+  max-width:95%;
+  max-height:95%;
+  border-radius:16px;
+}
+#modal span{
+  position:absolute;
+  top:20px;right:20px;
+  font-size:26px;
+  cursor:pointer;
+}
+
+/* OCULTAR */
+.blur *{filter:blur(14px)}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <h2>Digite o código</h2>
+  <div class="dots" id="dots"></div>
+  <div class="keypad">
+    <button onclick="press(1)">1</button><button onclick="press(2)">2</button><button onclick="press(3)">3</button>
+    <button onclick="press(4)">4</button><button onclick="press(5)">5</button><button onclick="press(6)">6</button>
+    <button onclick="press(7)">7</button><button onclick="press(8)">8</button><button onclick="press(9)">9</button>
+    <button onclick="del()">⌫</button><button onclick="press(0)">0</button><button></button>
+  </div>
+</div>
+
+<header>
+  <span id="title">Private</span>
+  <span class="menu-btn" onclick="menu.classList.toggle('open')">☰</span>
+</header>
+
+<!-- MENU -->
+<div id="menu" class="menu">
+  <button onclick="show('dashboard')">📊 Dashboard</button>
+  <button onclick="show('agenda')">📅 Agenda</button>
+  <button onclick="show('notas')">📝 Notas</button>
+  <button onclick="show('musicas')">🎵 Músicas</button>
+  <button onclick="show('galeria')">🖼️ Galeria</button>
+  <button onclick="toggleHide()">🙈 Ocultar</button>
+  <button onclick="logout()">🔒 Voltar ao PIN</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="card hidden">
+  <h3>Dashboard</h3>
+  <p id="hora"></p>
+  <p id="data"></p>
+</div>
+
+<!-- AGENDA -->
+<div id="agenda" class="card hidden">
+  <h3>Agenda</h3>
+  <input type="date" id="dataEvento">
+  <input id="textoEvento" placeholder="Evento">
+  <button onclick="addEvento()">Salvar</button>
+  <div id="listaEventos"></div>
+</div>
+
+<!-- NOTAS -->
+<div id="notas" class="card hidden">
+  <h3>Bloco de Notas</h3>
+  <textarea id="nota" rows="6"></textarea>
+  <button onclick="saveNota()">Salvar</button>
+</div>
+
+<!-- 🎵 MÚSICAS COM PLAYER -->
+<div id="musicas" class="card hidden">
+  <h3>🎵 Músicas</h3>
+
+  <input type="file" accept="audio/*" onchange="addAudio(event)">
+
+  <audio id="player" controls style="width:100%; margin-top:10px;"></audio>
+
+  <div id="listaMusicas" style="margin-top:15px"></div>
+</div>
+
+<!-- GALERIA -->
+<div id="galeria" class="card hidden">
+  <h3>Galeria</h3>
+  <input type="file" accept="image/*" onchange="addFoto(event)">
+  <div id="fotos" class="grid"></div>
+</div>
+
+<!-- MODAL -->
+<div id="modal" onclick="closeModal()">
+  <span>✕</span>
+  <img id="modalImg">
+</div>
+
+<script>
+const PIN="141414";
+let pin="";
+
+/* PIN */
+const dots=document.getElementById("dots");
+for(let i=0;i<6;i++)dots.innerHTML+=`<div class="dot"></div>`;
+
+function press(n){
+  if(pin.length>=6)return;
+  pin+=n;updateDots();
+  if(pin.length===6){
+    if(pin===PIN){
+      login.style.display="none";
+      show("dashboard");
+    }else{
+      pin="";updateDots();alert("PIN incorreto");
+    }
+  }
+}
+function del(){pin=pin.slice(0,-1);updateDots()}
+function updateDots(){
+  document.querySelectorAll(".dot").forEach((d,i)=>d.classList.toggle("filled",i<pin.length))
+}
+
+/* NAV */
+function show(id){
+  document.querySelectorAll(".card").forEach(c=>c.classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
+  menu.classList.remove("open");
+}
+function logout(){
+  pin="";updateDots();
+  document.querySelectorAll(".card").forEach(c=>c.classList.add("hidden"));
+  document.body.classList.remove("blur");
+  login.style.display="flex";
+}
+function toggleHide(){document.body.classList.toggle("blur")}
+
+/* DASHBOARD */
+setInterval(()=>{
+  hora.innerText="Hora: "+new Date().toLocaleTimeString();
+  data.innerText="Data: "+new Date().toLocaleDateString();
+},1000);
+
+/* NOTAS */
+nota.value=localStorage.nota||"";
+function saveNota(){localStorage.nota=nota.value}
+
+/* AGENDA */
+let eventos=JSON.parse(localStorage.eventos||"[]");
+function addEvento(){
+  eventos.push({d:dataEvento.value,t:textoEvento.value});
+  localStorage.eventos=JSON.stringify(eventos);
+  renderEventos();
+}
+function renderEventos(){
+  listaEventos.innerHTML="";
+  eventos.forEach(e=>listaEventos.innerHTML+=`<p>${e.d} - ${e.t}</p>`);
+}
+renderEventos();
+
+/* GALERIA */
+const fotosDiv = document.getElementById("fotos");
+let fotos = JSON.parse(localStorage.fotos || "[]");
+
+function addFoto(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const r = new FileReader();
+  r.onload = () => {
+    fotos.push(r.result);
+    localStorage.fotos = JSON.stringify(fotos);
+    renderFotos();
+  };
+  r.readAsDataURL(file);
+}
+function renderFotos(){
+  fotosDiv.innerHTML="";
+  fotos.forEach((img,i)=>{
+    fotosDiv.innerHTML+=`
+      <div class="photo">
+        <img src="${img}" onclick="openModal('${img}')">
+        <button class="delete" onclick="deleteFoto(${i})">✕</button>
+      </div>`;
+  });
+}
+function deleteFoto(i){
+  fotos.splice(i,1);
+  localStorage.fotos = JSON.stringify(fotos);
+  renderFotos();
+}
+renderFotos();
+
+/* 🎵 PLAYER DE MÚSICA */
+const player = document.getElementById("player");
+const listaMusicas = document.getElementById("listaMusicas");
+let musicas = JSON.parse(localStorage.musicasPlayer || "[]");
+
+function addAudio(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    musicas.push({nome:file.name,src:reader.result});
+    localStorage.musicasPlayer = JSON.stringify(musicas);
+    renderMusicas();
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderMusicas(){
+  listaMusicas.innerHTML="";
+  musicas.forEach((m,i)=>{
+    listaMusicas.innerHTML+=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span onclick="playMusica(${i})" style="cursor:pointer">▶️ ${m.nome}</span>
+        <button onclick="deleteMusica(${i})" style="background:#ff3b30">✕</button>
+      </div>`;
+  });
+}
+
+function playMusica(i){
+  player.src = musicas[i].src;
+  player.play();
+}
+function deleteMusica(i){
+  musicas.splice(i,1);
+  localStorage.musicasPlayer = JSON.stringify(musicas);
+  renderMusicas();
+}
+renderMusicas();
+
+/* MODAL */
+function openModal(src){
+  modal.style.display="flex";
+  modalImg.src=src;
+}
+function closeModal(){modal.style.display="none"}
+</script>
+
+</body>
+</html>
